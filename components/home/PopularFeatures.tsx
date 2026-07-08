@@ -6,12 +6,21 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { TagManager } from './TagManager';
 import { MovieGrid } from './MovieGrid';
+import { CategoryQuickSearch } from './CategoryQuickSearch';
 import { useTagManager } from './hooks/useTagManager';
 import { usePopularMovies } from './hooks/usePopularMovies';
 import { usePersonalizedRecommendations } from './hooks/usePersonalizedRecommendations';
+
+interface DoubanMovie {
+  id: string;
+  title: string;
+  cover: string;
+  rate: string;
+  url: string;
+}
 
 interface PopularFeaturesProps {
   onSearch?: (query: string) => void;
@@ -46,19 +55,9 @@ export function PopularFeatures({ onSearch }: PopularFeaturesProps) {
     loadMoreRef: recommendLoadMoreRef,
   } = usePersonalizedRecommendations(false);
 
-  // Track whether the recommendation tab is active
-  const [isRecommendSelected, setIsRecommendSelected] = useState(hasHistory);
+  const [hasSelectedRegularTag, setHasSelectedRegularTag] = useState(false);
 
-  // Sync selection when hasHistory changes after Zustand hydration from localStorage.
-  // On first render the store is empty (hasHistory=false), so useState captures false.
-  // Once hydration completes and hasHistory becomes true, auto-select the recommendation tab.
-  useEffect(() => {
-    if (hasHistory) {
-      setIsRecommendSelected(true);
-    }
-  }, [hasHistory]);
-
-  const effectiveRecommendSelected = hasHistory && isRecommendSelected;
+  const effectiveRecommendSelected = hasHistory && !hasSelectedRegularTag;
 
   const {
     movies,
@@ -72,14 +71,14 @@ export function PopularFeatures({ onSearch }: PopularFeaturesProps) {
     contentType
   );
 
-  const handleMovieClick = (movie: any) => {
+  const handleMovieClick = (movie: DoubanMovie) => {
     if (onSearch) {
       onSearch(movie.title);
     }
   };
 
   const handleRecommendSelect = () => {
-    setIsRecommendSelected(true);
+    setHasSelectedRegularTag(false);
   };
 
   const handleRegularTagSelect = (tagId: string) => {
@@ -87,12 +86,14 @@ export function PopularFeatures({ onSearch }: PopularFeaturesProps) {
       window.location.href = '/premium';
       return;
     }
-    setIsRecommendSelected(false);
+    setHasSelectedRegularTag(true);
     setSelectedTag(tagId);
   };
 
   return (
     <div className="animate-fade-in">
+      <CategoryQuickSearch onSearch={onSearch} />
+
       {/* Content Type Toggle (Capsule Liquid Glass - Fixed & Centered) */}
       {!effectiveRecommendSelected && (
         <div className="mb-10 flex justify-center">
